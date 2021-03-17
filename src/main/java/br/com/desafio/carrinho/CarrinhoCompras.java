@@ -1,13 +1,18 @@
 package br.com.desafio.carrinho;
 
 
+import br.com.desafio.carrinho.exception.CarrinhoCompraItemInvalidException;
+
 import java.math.BigDecimal;
-import java.util.Collection;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Classe que representa o carrinho de compras de um cliente.
  */
 public class CarrinhoCompras {
+
+    private List<Item> itens = new ArrayList<>();
 
     /**
      * Permite a adição de um novo item no carrinho de compras.
@@ -26,7 +31,19 @@ public class CarrinhoCompras {
      * @param quantidade
      */
     public void adicionarItem(Produto produto, BigDecimal valorUnitario, int quantidade) {
-
+        try {
+            Optional<Item> foundItem = itens.stream().filter(item -> item.getProduto().equals(produto)).findFirst();
+            if (foundItem.isPresent()) {
+                foundItem.get().setValorUnitario(valorUnitario);
+                foundItem.get().setQuantidade(foundItem.get().getQuantidade() + quantidade);
+            } else {
+                Item newItem = new Item(produto, valorUnitario, quantidade);
+                newItem.setIndex(itens.size() + 1);
+                this.itens.add(newItem);
+            }
+        } catch (RuntimeException e) {
+            throw new CarrinhoCompraItemInvalidException("Não foi possível adicionar o item no carrinho, verifique os dados informados");
+        }
     }
 
     /**
@@ -37,7 +54,8 @@ public class CarrinhoCompras {
      * caso o produto não exista no carrinho.
      */
     public boolean removerItem(Produto produto) {
-
+        Optional<Item> itemToRemove = this.itens.stream().filter(item -> item.getProduto().equals(produto)).findFirst();
+        return itemToRemove.isPresent() && itens.remove(itemToRemove.get());
     }
 
     /**
@@ -49,7 +67,17 @@ public class CarrinhoCompras {
      * caso o produto não exista no carrinho.
      */
     public boolean removerItem(int posicaoItem) {
+        // Minha primeira alternativa:
+        /*try {
+            Item itemRemoved = itens.remove(posicaoItem);
+            return itemRemoved != null;
+        } catch (Exception e) {
+            return false;
+        }*/
 
+        // Uma implementação manual
+        Optional<Item> itemToRemove = this.itens.stream().filter(item -> item.getIndex() == posicaoItem).findFirst();
+        return itemToRemove.isPresent() && itens.remove(itemToRemove.get());
     }
 
     /**
@@ -59,7 +87,8 @@ public class CarrinhoCompras {
      * @return BigDecimal
      */
     public BigDecimal getValorTotal() {
-
+        List<BigDecimal> valorTotalItens = itens.stream().map(item -> item.getValorTotal()).collect(Collectors.toList());
+        return valorTotalItens.stream().reduce(BigDecimal.ZERO, (subtotal, element) -> subtotal.add(element));
     }
 
     /**
@@ -68,6 +97,21 @@ public class CarrinhoCompras {
      * @return Collection<Itens>
      */
     public Collection<Item> getItens() {
+        return this.itens;
+    }
 
+    @Override
+    public String toString() {
+        List<String> list = itens.stream()
+                .map(
+                        item -> String.format(
+                                "{ Index: %d, Produto: %s, Quantidade: %d, ValorUnitário: %.2f }",
+                                item.getIndex(),
+                                item.getProduto().getDescricao(),
+                                item.getQuantidade(),
+                                item.getValorUnitario()
+                        )).collect(Collectors.toList());
+
+        return list.toString();
     }
 }

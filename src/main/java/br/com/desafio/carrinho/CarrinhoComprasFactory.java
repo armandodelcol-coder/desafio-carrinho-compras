@@ -1,11 +1,16 @@
 package br.com.desafio.carrinho;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Classe responsável pela criação e recuperação dos carrinhos de compras.
  */
 public class CarrinhoComprasFactory {
+
+    private HashMap<String, CarrinhoCompras> carrinhos = new HashMap<>();
 
     /**
      * Cria um carrinho de compras para o cliente passado como parâmetro.
@@ -16,7 +21,12 @@ public class CarrinhoComprasFactory {
      * @return CarrinhoCompras
      */
     public CarrinhoCompras criar(String identificacaoCliente) {
+        CarrinhoCompras carrinhoCompras = carrinhos.get(identificacaoCliente);
+        if (carrinhoCompras != null) return carrinhoCompras;
 
+        carrinhoCompras = new CarrinhoCompras();
+        carrinhos.put(identificacaoCliente, carrinhoCompras);
+        return carrinhoCompras;
     }
 
     /**
@@ -29,7 +39,10 @@ public class CarrinhoComprasFactory {
      * @return BigDecimal
      */
     public BigDecimal getValorTicketMedio() {
-
+        List<BigDecimal> valoresCarrinhos = carrinhos.values().stream().map(carrinhoCompras -> carrinhoCompras.getValorTotal()).collect(Collectors.toList());
+        Integer totalCarrinhos = valoresCarrinhos.size();
+        BigDecimal valorTotalCarrinhos = valoresCarrinhos.stream().reduce(BigDecimal.ZERO, (subtotal, element) -> subtotal.add(element));
+        return valorTotalCarrinhos.divide(BigDecimal.valueOf(totalCarrinhos));
     }
 
     /**
@@ -41,6 +54,7 @@ public class CarrinhoComprasFactory {
      * e false caso o cliente não possua um carrinho.
      */
     public boolean invalidar(String identificacaoCliente) {
-
+        CarrinhoCompras carrinhoComprasRemover = carrinhos.remove(identificacaoCliente);
+        return carrinhoComprasRemover != null;
     }
 }
